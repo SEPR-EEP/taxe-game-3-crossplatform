@@ -177,6 +177,7 @@ public class GameScreen extends ScreenAdapter {
 			stationController.displayNumberOfTrainsAtStations();
 		}
 		
+		game.batch.setProjectionMatrix(stage.getCamera().combined);
 		resourceController.drawHeaderText();
 		goalController.drawHeaderText();
 		scoreController.drawScoreDetails();

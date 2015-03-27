@@ -6,38 +6,57 @@ import gameLogic.PlayerManager;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GameTest extends LibGdxTest {
     private PlayerManager pm;
+    private Game game;
+    private Player p1;
 
     @Before
     public void setUpGame() throws Exception {
-        Game game = Game.getInstance();
+        game = Game.getInstance();
         game.getPlayerManager();
         pm = game.getPlayerManager();
-    }
-
-    @Test
-    public void testInitialisePlayers() {
-        Player currentPlayer = pm.getCurrentPlayer();
-
-        // fresh players should start with at least 1 goal and resource
-        assertTrue(currentPlayer.getResources().size() > 0);
-        assertTrue(currentPlayer.getGoals().size() > 0);
+        p1 = pm.getCurrentPlayer();
     }
 
     @Test
     public void testPlayerChanged() throws Exception {
-        Player p1 = pm.getCurrentPlayer();
-        int resourceCount = p1.getResources().size();
-        int goalCount = p1.getGoals().size();
+
+        assertEquals("Player should start with two resources", 2, p1.getResources().size());
+        assertEquals("Player should start with three goals", 3, p1.getNumberOfIncompleteGoals());
 
         pm.turnOver();
         pm.turnOver();
 
         // resource count should increase when p1 has another turn
-        assertTrue(p1.getResources().size() > resourceCount);
-        assertTrue(p1.getGoals().size() > goalCount);
+        assertEquals("Player should now have four resources", 4, p1.getResources().size());
+
+        // goal count
+        assertEquals("Player should still have maximum of three goals", 3, p1.getNumberOfIncompleteGoals());
+
+        pm.turnOver();
+        pm.turnOver();
+
+        // resource count should increase when p1 has another turn
+        assertEquals("Player should now have six resources", 6, p1.getResources().size());
+
+        // goal count
+        assertEquals("Player should still have maximum of three goals", 3, p1.getNumberOfIncompleteGoals());
+
+        pm.turnOver();
+        pm.turnOver();
+
+        // resource count should increase when p1 has another turn
+        assertEquals("Player should have maximum of seven resources", 7, p1.getResources().size());
+
+        // goal count
+        assertEquals("Player should still have maximum of three goals", 3, p1.getNumberOfIncompleteGoals());
+
+
+
     }
+
 }

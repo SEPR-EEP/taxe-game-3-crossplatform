@@ -26,6 +26,10 @@ public class TaxeGame extends Game {
 	
 	/**ShapeRenderer instance used to render shapes without immediately using textures.*/
 	public ShapeRenderer shapeRenderer;
+	
+	public TaxeGame(){
+		super();
+	}
 
 	/**Instantiation method. Sets up the batch, fonts and shapeRenderer, and then sets the Screen to the mainMenu.*/
 	@Override
@@ -44,9 +48,8 @@ public class TaxeGame extends Game {
 		fontSmall = generator.generateFont(parameter);
 		fontSmall.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		generator.dispose(); // don't forget to dispose to avoid memory leaks!
-		MainMenuScreen screen = new MainMenuScreen(this);
-		setScreen(screen);
-        Gdx.app.getGraphics().setDisplayMode(Gdx.graphics.getDesktopDisplayMode().width, Gdx.graphics.getDesktopDisplayMode().height, true);
+
+		setScreen(new MainMenuScreen(this));
 	}
 
 	/**This method renders the game, using super.render().*/

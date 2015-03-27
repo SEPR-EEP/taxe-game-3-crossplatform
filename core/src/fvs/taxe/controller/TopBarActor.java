@@ -36,6 +36,11 @@ public class TopBarActor extends Actor {
 	public void draw(Batch batch, float parentAlpha) {
 		super.draw(batch, parentAlpha);
 		batch.end();
+		
+        shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+        shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
+        shapeRenderer.translate(getX(), getY(), 0);
+		
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         
         // main topBar
