@@ -8,15 +8,14 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
 
 /**This class is used to set up the graphical interface of the main menu for the player. It is first used when the TaxeGame.java is instantiated.*/
 public class MainMenuScreen extends ScreenAdapter {
 	
 	/**Stores the main instance of TaxeGame.java.*/
     final private TaxeGame game;
-    
-    /**Stores an orthographic camera used in the menu to project clicks.*/
-    private OrthographicCamera camera;
     
     /**This rectangle stores the bounds of the play button, and is used to detect whether a click has clicked the play button.*/
     private Rectangle playBounds;
@@ -29,14 +28,16 @@ public class MainMenuScreen extends ScreenAdapter {
     
     /**Used to store the map texture which is placed in the background.*/
     private CustomTexture mapTexture;
+    
+    /**Stage with viewport used to resize the game according to different device screens*/
+    private Stage stage;
 
     /**Instantiation method. sets up bounds and camera.
 	 *@param game The main TaxeGame instance is assigned to the local variable game.
     */
     public MainMenuScreen(TaxeGame game) {
         this.game = game;
-        camera = new OrthographicCamera(TaxeGame.WIDTH, TaxeGame.HEIGHT);
-        camera.setToOrtho(false);
+        stage = new Stage(new StretchViewport(TaxeGame.WIDTH, TaxeGame.HEIGHT));
 
         playBounds = new Rectangle(TaxeGame.WIDTH/2 - 200, 350, 400, 100);
         exitBounds = new Rectangle(TaxeGame.WIDTH/2 - 200, 200, 400, 100);
@@ -47,7 +48,7 @@ public class MainMenuScreen extends ScreenAdapter {
     /**This method is called once every frame using the render method. It checks whether there has been a touch, and if so, checks whether this touch is within one of the buttons bounds.*/
     public void update() {
         if (Gdx.input.justTouched()) {
-            camera.unproject(touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0));
+            stage.getViewport().getCamera().unproject(touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0));
             if (playBounds.contains(touchPoint.x, touchPoint.y)) {
             	GameScreen gameScreen = new GameScreen(game);
                 game.setScreen(gameScreen);
@@ -66,8 +67,8 @@ public class MainMenuScreen extends ScreenAdapter {
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         //Draw transparent map in the background
-        camera.update();
-        game.batch.setProjectionMatrix(camera.combined);
+        
+        game.batch.setProjectionMatrix(stage.getViewport().getCamera().combined);
 
         game.batch.begin();
         Color c = game.batch.getColor();
@@ -77,7 +78,7 @@ public class MainMenuScreen extends ScreenAdapter {
         game.batch.end();
 
         //Draw rectangles, did not use TextButtons because it was easier not to
-        game.shapeRenderer.setProjectionMatrix(camera.combined);
+        game.shapeRenderer.setProjectionMatrix(stage.getViewport().getCamera().combined);
         game.shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         game.shapeRenderer.setColor(Color.GREEN);
@@ -103,4 +104,11 @@ public class MainMenuScreen extends ScreenAdapter {
         update();
         draw();
     }
+    
+	@Override
+	public void resize(int width, int height) {
+	    // use true here to center the camera
+	    // that's what you probably want in case of a UI
+	    stage.getViewport().update(width, height, true);
+	}
 }
