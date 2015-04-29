@@ -14,9 +14,10 @@ import java.util.Random;
 
 import Util.Node;
 import Util.Tuple;
+import java.io.Serializable;
 
 /**This class manages goals for the game.*/
-public class GoalManager {
+public class GoalManager implements Serializable {
 	/**The maximum number of goals a player can have.*/
 	public final static int CONFIG_MAX_PLAYER_GOALS = 3;
 	
@@ -24,7 +25,7 @@ public class GoalManager {
 	private ResourceManager resourceManager;
 	
 	/**The List of listeners that are notified when a goal is finished.*/
-	private List<GoalListener> listeners;
+	private static List<GoalListener> listeners;
 	
 	/**Instantiation method.
 	 * @param resourceManager The ResourceManager for the Game.
@@ -40,23 +41,21 @@ public class GoalManager {
 	 * @return
 	 */
 	public Goal generateRandomGoal(int turn, int extraConstraints) {
-		Map map = Game.getInstance().getMap();
-		Station origin;
-		do {
-			origin = map.getRandomStation();
-		} while (origin instanceof CollisionStation);
-		Station destination;
-		do {
-			destination = map.getRandomStation();
-		} while (destination == origin || destination instanceof CollisionStation);
 
-		//Find the ideal solution to solving this objective
-		Node<Station> originNode = new Node<Station>();
-		originNode.setData(origin);
-		ArrayList<Node<Station>> searchFringe = new ArrayList<Node<Station>>();
-		searchFringe.add(originNode);
-		List<Station> idealRoute = map.getIdealRoute(destination, searchFringe, map.getStationsList());
-		
+        Map map = Game.getInstance().getMap();
+        Station origin, destination;
+        List<Station> idealRoute;
+
+        //We need to create a goal with two distinct stations that has a valid routing
+
+
+        do {
+            origin = map.getRandomStation();
+            destination = map.getRandomStation();
+            idealRoute = generateGoalRoute(map, origin, destination);
+        } while ( origin instanceof CollisionStation || destination == origin  || destination instanceof CollisionStation || idealRoute == null );
+
+
 		Goal goal = new Goal(origin, destination, turn, idealRoute);
 				
 		//Check if we need to complicate the Goal with further constraints
@@ -75,6 +74,16 @@ public class GoalManager {
 		}
 		return goal;
 	}
+
+    private List<Station> generateGoalRoute(Map map, Station origin, Station destination){
+        //Find the ideal solution to solving this objective
+        Node<Station> originNode = new Node<Station>();
+        originNode.setData(origin);
+        ArrayList<Node<Station>> searchFringe = new ArrayList<Node<Station>>();
+        searchFringe.add(originNode);
+        List<Station> idealRoute = map.getIdealRoute(destination, searchFringe, map.getStationsList());
+        return idealRoute;
+    }
 	
 	/**This method generates a set of extra constraints using the ideal Route.
 	 * @param idealRoute The ideal route for which the constraints should be generated.

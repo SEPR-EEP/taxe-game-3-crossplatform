@@ -9,8 +9,8 @@ public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 		//Set window size
-		config.height = TaxeGame.HEIGHT;
-		config.width = TaxeGame.WIDTH;
+		config.height = (TaxeGame.HEIGHT/4) *3;
+		config.width = (TaxeGame.WIDTH/4)*3;
 		config.title = "TaxE";
 //		config.resizable = false;
 		//config.fullscreen = true;

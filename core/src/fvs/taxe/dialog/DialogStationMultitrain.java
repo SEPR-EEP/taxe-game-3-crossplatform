@@ -35,10 +35,16 @@ public class DialogStationMultitrain extends Dialog {
 		text("Choose which train you would like");
 		
 		List<Resource> activeTrains = context.getGameLogic().getPlayerManager().getCurrentPlayer().getActiveTrains();
+		System.out.println("There are " + activeTrains.size() + " active trains for the current player.");
 		List<Train> localTrains = new ArrayList<Train>(); // player's active trains at that station
+		System.out.println("Station location is: " + station.getLocation().getX() + ", " + station.getLocation().getY());
 		for (Resource resource : activeTrains) {
-			if(((Train) resource).getPosition() == station.getLocation()) {
+			System.out.print("- Checking train " + resource + " with location " + ((Train) resource).getPosition().getX() + ", " + ((Train) resource).getPosition().getY());
+			if(((Train) resource).getPosition().equals(station.getLocation())) {
 				localTrains.add((Train) resource);
+				System.out.println(" YES");
+			} else {
+				System.out.println(" NO");
 			}
 		}
 		

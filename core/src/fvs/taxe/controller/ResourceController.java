@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import fvs.taxe.TaxeGame;
 import fvs.taxe.dialog.TrainClicked;
+import gameLogic.Game;
 import gameLogic.Player;
 import gameLogic.PlayerChangedListener;
 import gameLogic.resource.Resource;
@@ -69,7 +70,10 @@ public class ResourceController {
 
                 TextButton button = new TextButton(resource.toString(), context.getSkin());
                 button.setPosition(x, y);
-                button.addListener(listener);
+
+                if (!Game.getInstance().replayMode) {
+                    button.addListener(listener);
+                }
 
                 resourceButtons.addActor(button);
 

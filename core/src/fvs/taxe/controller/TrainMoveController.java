@@ -2,6 +2,8 @@ package fvs.taxe.controller;
 
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.moveTo;
 import fvs.taxe.actor.TrainActor;
+import gameLogic.Game;
+import gameLogic.GameState;
 import gameLogic.Player;
 import gameLogic.TurnListener;
 import gameLogic.map.CollisionStation;
@@ -67,19 +69,21 @@ public class TrainMoveController {
 	}
 
 	/**This method produces an action to run every time a train reaches a station on it's route.
-	 * @param station The station reached.
+	 * @param stationReached The station reached.
 	 * @return An action which adds the train movement to the move history and continues the journey of the train.
 	 */
-	private RunnableAction perStationAction(final Station station) {
+	private RunnableAction perStationAction(final Station stationReached, final Station nextStationOfRoute) {
 		return new RunnableAction() {
 			public void run() {
-				train.addHistory(station.getName(), context.getGameLogic().getPlayerManager().getTurnNumber());
-				System.out.println("Added to history: passed " + station.getName() + " on turn "
+				train.addHistory(stationReached.getName(), context.getGameLogic().getPlayerManager().getTurnNumber());
+				System.out.println("Added to history: passed " + stationReached.getName() + " on turn "
 						+ context.getGameLogic().getPlayerManager().getTurnNumber());
 				
-				junctionFailure(station);
-				collisions(station);
-				obstacleCollision(station);
+				junctionFailure(stationReached);
+				collisions(stationReached);
+				obstacleCollision(stationReached);
+
+				train.setNextStationOfRoute(nextStationOfRoute);
 			}
 
 		};
@@ -90,7 +94,7 @@ public class TrainMoveController {
 		// calculate if a junction failure has occured- if it has, stop the train at the station for that turn
 		if (station instanceof CollisionStation){
 			boolean junctionFailed = MathUtils.randomBoolean(JUNCTION_FAILURE_CHANCE);
-			if (junctionFailed && station != train.getRoute().get(0)) {
+			if (Game.getInstance().replayMode == false && junctionFailed && station != train.getRoute().get(0)) {
 				action.setInterrupt(true);
 				context.getTopBarController().displayObstacleMessage("Junction failed, " + train.getName() + " stopped!", Color.YELLOW);
 			}
@@ -118,16 +122,61 @@ public class TrainMoveController {
 	/**This method uses the current's train's routes to create a set of move actions for the train.*/
 	public void addMoveActions() {
 		action = new InterruptableSequenceAction();
-		IPositionable current = train.getPosition();
+
+		Station firstStation = train.getRoute().get(0);
+		Station secondStation = train.getRoute().get(1);
+		boolean rerouting = firstStation == secondStation;
+		IPositionable current;
+		if ( rerouting ) {
+			current = new Position((int)(train.getActor().getX()+train.getActor().width/2),         
+		         				(int)(train.getActor().getY()+train.getActor().height/2));                                    
+		} else {
+			current = train.getPosition();
+		}
+//		System.out.println("Y = " + train.getActor().getY());
+//		System.out.println("Height = " + train.getActor().height/2);
+
+
+		System.out.println("Initial position of the train atm is: " + current.getX() + ", " + current.getY());
+
 		action.addAction(beforeAction());
+		
+		if (!rerouting) {
+			action.addAction(moveTo(firstStation.getLocation().getX() - TrainActor.width / 2, firstStation.getLocation().getY() - TrainActor.height / 2, 0));
+		}
+		
+		boolean first = true;
+		int stationIndex = 0;
 
 		for (final Station station : train.getRoute()) {
+
+			// We want to skip the first iteration (from nowhere to intial station!)
+			if ( first ) {
+				first = false;
+				continue;
+			}
+			
 			IPositionable next = station.getLocation();
+			
+			System.out.println("Train Speed = " + train.getSpeed());
+			System.out.println("Train Position = " + current.getX() + " " + current.getY());
+			System.out.println("Next Position = " + next.getX() + " " + next.getY());System.out.println("Train Speed = " + train.getSpeed());
+			System.out.println("Distance = " + getDistance(current, next));
+			
 			float duration = getDistance(current, next) / train.getSpeed();
+			System.out.println("I will move the train for " + duration + " seconds \n");
 			action.addAction(moveTo(next.getX() - TrainActor.width / 2, next.getY() - TrainActor.height / 2, duration));
 			
-			action.addAction(perStationAction(station));
+			Station nextStationOfRoute;
+			if (stationIndex < train.getRoute().size() - 1){
+				nextStationOfRoute = train.getRoute().get(stationIndex+1);
+			} else {
+				nextStationOfRoute = null;
+			}
+			//Team EEP has changed code to also pass the next station of the route
+			action.addAction(perStationAction(station, nextStationOfRoute));
 			current = next;
+			stationIndex++;
 		}
 
 		action.addAction(afterAction());
@@ -151,14 +200,16 @@ public class TrainMoveController {
 	 */
 	private void collisions(Station station) {
 		//test for train collisions at Junction point
-		if(!(station instanceof CollisionStation)) {
+		if(Game.getInstance().replayMode || !(station instanceof CollisionStation)) {
 			return;
 		}
 		List<Train> trainsToDestroy = collidedTrains();
 
 		if(trainsToDestroy.size() > 0) {
 			for(Train trainToDestroy : trainsToDestroy) {
-				trainToDestroy.getActor().remove();
+				if ( trainToDestroy.getActor() != null ) {
+					trainToDestroy.getActor().remove();
+				}
 				trainToDestroy.getPlayer().removeResource(trainToDestroy);
 			}
 
@@ -169,10 +220,10 @@ public class TrainMoveController {
 	/**This method checks if the train has collided with an obstacle when it reaches a station. If it has, the train is destroyed.*/
 	private void obstacleCollision(Station station) {
 		// works out if the station has an obstacle active there, whether to destroy the train
-		if (station.hasObstacle() && MathUtils.randomBoolean(station.getObstacle().getDestructionChance())){
-			train.getActor().remove();
-			train.getPlayer().removeResource(train);
-			context.getTopBarController().displayFlashMessage("Your train was hit by a natural disaster...", Color.BLACK, Color.RED, 4);
+		if (Game.getInstance().replayMode == false && station.hasObstacle() && MathUtils.randomBoolean(station.getObstacle().getDestructionChance())){
+
+			Game.getInstance().setTrainToDestroy(train);
+			Game.getInstance().setState(GameState.DESTROYING);
 		}
 	}
 

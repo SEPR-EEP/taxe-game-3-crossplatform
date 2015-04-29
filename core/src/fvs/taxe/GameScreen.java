@@ -2,6 +2,7 @@ package fvs.taxe;
 
 import fvs.taxe.controller.Context;
 import fvs.taxe.controller.GoalController;
+import fvs.taxe.controller.MapController;
 import fvs.taxe.controller.ObstacleController;
 import fvs.taxe.controller.ResourceController;
 import fvs.taxe.controller.RouteController;
@@ -16,11 +17,13 @@ import gameLogic.TurnListener;
 import gameLogic.map.Map;
 import gameLogic.map.Station;
 import gameLogic.obstacle.Rumble;
+import java.io.Serializable;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -81,9 +84,18 @@ public class GameScreen extends ScreenAdapter {
 	
 	/**Controller for handling the score.*/
 	private ScoreController scoreController;
+	
+	/**Controller for handling connection modification.*/
+	private MapController mapController;
 
 	/**Variable that is used to visibly "rumble" the game when an obstacle is placed.*/
 	private Rumble rumble;
+
+	/**Time passed from last execution of the replay timer*/
+	private float lastTimer;
+
+	/** Approximate time between executions of the replay timer task. */
+	private final float REPLAY_TIMER = 0.250f;
 	
 	/**Instantiation method. Sets up the game using the passed TaxeGame argument. 
 	 *@param game The instance of TaxeGame to be passed to the GameScreen to display.
@@ -111,9 +123,13 @@ public class GameScreen extends ScreenAdapter {
 		routeController = new RouteController(context);
 		obstacleController = new ObstacleController(context);
 		scoreController = new ScoreController(context);
+		mapController = new MapController(context);
 
 		context.setRouteController(routeController);
 		context.setTopBarController(topBarController);
+		context.setGoalController(goalController);
+		context.setMapController(mapController);
+		context.setStationController(stationController);
 
 		rumble = obstacleController.getRumble();
 
@@ -121,7 +137,7 @@ public class GameScreen extends ScreenAdapter {
 			@Override
 			public void changed() {
 				gameLogic.setState(GameState.ANIMATING);
-				topBarController.displayFlashMessage("Time is passing...", Color.GREEN, Color.BLACK, ANIMATION_TIME);
+				topBarController.displayFlashMessage("Time is passing...", Color.GREEN, Color.BLACK, ANIMATION_TIME / Game.getInstance().getGameSpeed());
 			}
 		});
 
@@ -164,7 +180,7 @@ public class GameScreen extends ScreenAdapter {
 
 		if(gameLogic.getState() == GameState.ANIMATING) {
 			timeAnimated += delta;
-			if (timeAnimated >= ANIMATION_TIME) {
+			if (timeAnimated >= ANIMATION_TIME / Game.getInstance().getGameSpeed()) {
 				gameLogic.setState(GameState.NORMAL);
 				timeAnimated = 0;
 			}
@@ -182,8 +198,41 @@ public class GameScreen extends ScreenAdapter {
 		goalController.drawHeaderText();
 		scoreController.drawScoreDetails();
 		scoreController.drawFinalScoreDetails();
+
+		lastTimer += delta;
+		if ( lastTimer >= REPLAY_TIMER ) {
+			lastTimer = 0f;
+			timerTask();
+		}
+
+
 	}
 
+	public void timerTask() {
+
+		if ( !Game.getInstance().replayMode ) {
+			topBarController.replayButton.setText("Replay " + topBarController.replaySpeedSlider.getValue() + "x");
+			return;
+		}
+
+		if ( Game.getInstance().getState() == GameState.ANIMATING ) {
+			return;
+		}
+
+		int next = Game.getInstance().replayingSnapshot + 1;
+		Game.getInstance().replaySnapshot(next);
+		int percentage = (int) ( (float) next / (float) Game.getInstance().getSnapshotsNumber() * 100 );
+		topBarController.replayButton.setText(percentage + "%");
+
+		gameLogic.getPlayerManager().playerChanged();
+
+		if ( next + 1 < Game.getInstance().getSnapshotsNumber() ) {
+			// Every time, except when the replay finishes.
+			topBarController.modifyConnectionButton.setVisible(false);
+			topBarController.endTurnButton.setVisible(false);
+		}
+
+	}
 	@Override
 	public void show() {
 		// order methods called matters for z-index!
@@ -196,6 +245,8 @@ public class GameScreen extends ScreenAdapter {
 		topBarController.drawBackground();
 		topBarController.drawLabels();
 		topBarController.drawEndTurnButton();
+		topBarController.drawModifyConnectionButton();
+		topBarController.drawReplayButton();
 	}
 
 	@Override

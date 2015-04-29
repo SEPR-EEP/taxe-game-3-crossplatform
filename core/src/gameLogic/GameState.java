@@ -6,5 +6,9 @@ public enum GameState {
     PLACING,
     ROUTING,
     ANIMATING,
-    WAITING
+    WAITING,
+	EDITING,
+    CONFIRMEDIT,
+	CONFIRMING,
+    DESTROYING
 }

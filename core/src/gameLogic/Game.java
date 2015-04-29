@@ -1,21 +1,29 @@
 package gameLogic;
 
+import fvs.taxe.controller.StationController;
 import gameLogic.goal.GoalManager;
+import gameLogic.map.IPositionable;
 import gameLogic.map.Map;
+import gameLogic.map.Station;
 import gameLogic.obstacle.Obstacle;
 import gameLogic.obstacle.ObstacleListener;
 import gameLogic.obstacle.ObstacleManager;
 import gameLogic.resource.ResourceManager;
+import gameLogic.resource.Train;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import Util.ActorsManager;
 import Util.Tuple;
 
 import com.badlogic.gdx.math.MathUtils;
 
 /**Main Game class of the Game. Handles all of the game logic.*/
-public class Game {
+public class Game implements Serializable {
 	/**The instance that the game is running in.*/
 	private static Game instance;
 	
@@ -42,6 +50,194 @@ public class Game {
 	
 	/**List of listeners that listen to changes in obstacles.*/
 	private List<ObstacleListener> obstacleListeners = new ArrayList<ObstacleListener>();
+	private Train confirmingTrain;
+
+	public Train getTrainToDestroy() {
+		return trainToDestroy;
+	}
+
+	public void setTrainToDestroy(Train trainToDestroy) {
+		this.trainToDestroy = trainToDestroy;
+	}
+
+	private Train trainToDestroy;
+	private List<IPositionable> confirmingPositions;
+
+	public void setConfirmingTrain(Train confirmingTrain) {
+		this.confirmingTrain = confirmingTrain;
+	}
+
+	public Train getConfirmingTrain() {
+		return confirmingTrain;
+	}
+
+	public void setConfirmingPositions(List<IPositionable> confirmingPositions) {
+		this.confirmingPositions = confirmingPositions;
+	}
+
+	public List<IPositionable> getConfirmingPositions() {
+		return confirmingPositions;
+	}
+
+	/**
+	 * The following class represents a single "snapshot", a state in time of the
+	 * current Game, and it contains the list of properties that are strictly necessary
+	 * for this purpose. All properties are meant to be publicly accessible. Note that
+	 * the overall scope is limited to the Game superclass as it is a private subclass.
+	 * A constructor is provided for simplicity, taking all of the properties.
+	 * The whole Snapshot class and all of the properties -including all descendants-
+	 * implement the Serializable interface. This allows for the Snapshot to be written
+	 * to disk, a database, a network socket, etc.
+	 */
+	public static class Snapshot implements Serializable {
+		public ArrayList<Player> players = new ArrayList<Player>();
+		public int currentTurn;
+		public int turnNumber;
+		public GoalManager goalManager;
+		public ResourceManager resourceManager;
+		public ObstacleManager obstacleManager;
+		public Map map;
+		public GameState state;
+		public List<ObstacleListener> obstacleListeners;
+		public Train confirmingTrain;
+		public List<IPositionable> confirmingPositions;
+		public Station origin;
+		public Station destination;
+		public Train trainToDestroy;
+		public Snapshot(
+				PlayerManager b, GoalManager c, ResourceManager d, ObstacleManager e, Map f,
+				GameState g, Train h, List<IPositionable> i, Station j, Station k, Train l
+		) {
+			players = b.getPlayers();
+			currentTurn = b.getCurrentTurn();
+			turnNumber = b.getTurnNumber();
+
+			goalManager = c; resourceManager = d;
+			obstacleManager = e; map = f; state = g;
+
+			confirmingTrain = h; confirmingPositions = i;
+
+			origin = j; destination = k;
+
+			trainToDestroy = l;
+		}
+	}
+	
+	/** The list of all Snapshots in memory. */
+	private List<byte[]> snapshots = new ArrayList<byte[]>();
+
+	/**
+	 * This method creates a Snapshot of the current state and pushes it to the
+	 * list of snapshot.
+	 */
+	public void createSnapshot() {
+		if ( this.replayMode ) {
+			return;
+		}
+		Snapshot s = new Snapshot(playerManager, goalManager, resourceManager, obstacleManager, map,
+				state, confirmingTrain, confirmingPositions, origin, destination, trainToDestroy);
+		try {
+			this.snapshots.add(SerializationUtils.serialize(s));
+		} catch (org.apache.commons.lang3.SerializationException e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+		System.out.println("# Snapshot created - " + getSnapshotsNumber() + " snapshots in memory at this time.");
+	}
+
+	/**
+	 * Given a Snapshot, this method loads the Snapshot's content into the current game.
+	 * @param s The Snapshot.
+	 */
+	public void loadSnapshot(Snapshot s) {
+		//instance = s.instance;
+		Game.getInstance().getPlayerManager().setPlayers(s.players);
+		for (Player p: Game.getInstance().getPlayerManager().getPlayers()) {
+			p.setPlayerManager(Game.getInstance().getPlayerManager());
+		}
+		Game.getInstance().getPlayerManager().setCurrentTurn(s.currentTurn);
+		Game.getInstance().getPlayerManager().setTurnNumber(s.turnNumber);
+		Game.getInstance().setConfirmingPositions(s.confirmingPositions);
+		Game.getInstance().setConfirmingTrain(s.confirmingTrain);
+		Game.getInstance().setOrigin(s.origin);
+		Game.getInstance().setDestination(s.destination);
+		Game.getInstance().setTrainToDestroy(s.trainToDestroy);
+		goalManager = s.goalManager;
+		resourceManager = s.resourceManager; obstacleManager = s.obstacleManager; map = s.map;
+		state = s.state;
+		StationController.redrawTrains();
+		stateChanged(); // Forcefully triggers an update of the game interface.
+	}
+
+	/**
+	 * REPLAY METHODS
+	 * These can be used to control the Replay functionality of the Game.
+	 */
+
+	/**
+	 * Is the game in Replay Mode?
+	 * When true, no action should be possible but replay navigation.
+	 */
+	public boolean replayMode = false;
+
+	/**
+	 * The snapshot number currently being replayed. Only set if
+	 * Replay Mode is true. (e.g. "playing {replayingSnapshot} out of {getSnapshotsNumber()}").
+	 */
+	public int replayingSnapshot = -1;
+
+	/**
+	 * Used for the replay. The overall playing speed.
+	 */
+	private float gameSpeed = 1.0f;
+
+	public void setGameSpeed(float speedMultiplier) {
+		this.gameSpeed = speedMultiplier;
+	}
+
+	public float getGameSpeed() {
+		return this.gameSpeed;
+	}
+
+	/**
+	 * This methods returns the current snapshots number.
+	 */
+	public int getSnapshotsNumber() {
+		return this.snapshots.size();
+	}
+
+	/**
+	 * Navigates to a given point in time.
+	 * - If a point in the past is given, ensure Replay Mode is set.
+	 * - If the latest point in time is given, ensure Replay Mode is not set.
+	 * @param snapshotNumber A number between 0..{getSnapshotsNumber()}
+	 */
+	public void replaySnapshot(int snapshotNumber) {
+		Snapshot s;
+		try {
+			s = SerializationUtils.deserialize(snapshots.get(snapshotNumber));
+		} catch (Exception e) {
+			// TODO Catch invalid index exception.
+			return;
+		}
+
+		loadSnapshot(s);
+		replayMode = ( snapshotNumber != getSnapshotsNumber() - 1 );
+		replayingSnapshot = replayMode ? snapshotNumber : -1;
+
+		System.out.println("@ Snapshot " + snapshotNumber + " out of " + getSnapshotsNumber() + " has been loaded.");
+		System.out.println("  Replay mode " + (replayMode? "is still active.": "has been now deactivated."));
+
+		if (!replayMode) {
+			// End of replay actions
+			getInstance().setGameSpeed(1.0f);
+			ActorsManager.showAllObstacles();
+		}
+
+	}
+
+
+	
 
 	/**The number of players that can play at one time.*/
 	private final int CONFIG_PLAYERS = 2;
@@ -73,6 +269,24 @@ public class Game {
 			}
 		});
 	}
+
+    public Station getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(Station origin) {
+        this.origin = origin;
+    }
+
+    public Station getDestination() {
+        return destination;
+    }
+
+    public void setDestination(Station destination) {
+        this.destination = destination;
+    }
+
+    Station origin, destination;
 
 	/**Returns the main game instance.*/
 	public static Game getInstance() {
@@ -122,6 +336,9 @@ public class Game {
 	/**Sets the GameState of the Game. Listeners are notified using stateChanged().*/
 	public void setState(GameState state) {
 		this.state = state;
+		if ( state != GameState.PLACING && state != GameState.ROUTING && state != GameState.WAITING ) {
+			this.createSnapshot();
+		}
 		stateChanged();
 	}
 
@@ -196,4 +413,15 @@ public class Game {
 		}
 		
 	}
+
+	private void deactivateAllObstacles() {
+		ArrayList<Tuple<Obstacle, Float>> obstacles = obstacleManager.getObstacles();
+		for (int i = 0; i< obstacles.size(); i++) {
+			Obstacle obstacle = obstacles.get(i).getFirst();
+			if (obstacle.isActive()) {
+				obstacle.end();
+			}
+		}
+	}
+
 }

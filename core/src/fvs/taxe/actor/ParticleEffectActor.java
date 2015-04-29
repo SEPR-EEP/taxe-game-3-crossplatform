@@ -4,9 +4,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import sun.net.www.content.text.Generic;
 
 /**This class is a type of actor specifically for creating Particles e.g. for obstacles.*/
-public class ParticleEffectActor extends Actor {
+public class ParticleEffectActor extends Actor implements GenericActor {
 
 	/**The particle effect to be used in this actor*/
 	private ParticleEffect particleEffect;

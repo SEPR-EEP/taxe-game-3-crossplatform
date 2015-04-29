@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.io.Serializable;
 
 import Util.Node;
 
@@ -12,7 +13,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 
-public class Map {
+public class Map implements Serializable {
 	/**The stations that exist on the map.*/
     private List<Station> stations;
     
@@ -173,6 +174,14 @@ public class Map {
         connections.add(newConnection);
         return newConnection;
     }
+    
+    /**This method removes an existing connection between two stations if it exists. 
+     * @param station1 The first station
+     * @param station2 The second station
+     */
+    public void removeConnection(Station station1, Station station2){
+    	connections.remove(getConnection(station1.getName(), station2.getName()));
+    }
 
     /**This method replicated addConnection but allows the use of station names instead of objects.
      * @param station1 The name of the first station.
@@ -219,6 +228,8 @@ public class Map {
 			{
 				discoveredStation = c.getStation1();
 			}
+
+            System.out.print("Found connection from " + station.getName() + " to " + discoveredStation.getName());
 			//Add the station if it is in the given list of stations or if the list of stations is empty
 			if(availableStations != null)
 			{
@@ -226,11 +237,15 @@ public class Map {
 				{
 					availableStations.remove(discoveredStation);
 					connectedStations.add(discoveredStation);
-				}
+                    System.out.println(" ADDED 1");
+				} else {
+                    System.out.println(" NOT ADDED");
+                }
 			}
 			else
 			{
 				connectedStations.add(discoveredStation);
+                System.out.println(" ADDED 2");
 			}
 		}
 		return connectedStations;
@@ -388,6 +403,11 @@ public class Map {
 		//Simple method for finding the length of a route
 		int i = 1;
 		float length = 0.0f;
+
+        if (idealRoute.isEmpty()){
+            return length;
+        }
+
 		Station previousStation = idealRoute.get(0);
 		while(i < idealRoute.size())
 		{

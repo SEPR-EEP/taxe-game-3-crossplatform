@@ -8,9 +8,10 @@ import gameLogic.Player;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.io.Serializable;
 
 /**This class creates and stores the Trains specified from trains.json*/
-public class ResourceManager {
+public class ResourceManager implements Serializable {
 	/** The maximum number of resources a Player can own */
     public final int CONFIG_MAX_RESOURCES = 7;
     

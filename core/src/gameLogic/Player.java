@@ -2,19 +2,22 @@ package gameLogic;
 
 import gameLogic.goal.Goal;
 import gameLogic.goal.GoalManager;
+import gameLogic.resource.ConnectionModifier;
 import gameLogic.resource.Resource;
 import gameLogic.resource.Train;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 
 /**This class holds variables and methods for a single player.*/
-public class Player {
+public class Player implements Serializable {
+
 
     /**
      * The game's player manager. This allows the class to access other players.
      */
-    private PlayerManager pm;
+    private transient PlayerManager pm;
 
     /**
      * The resources that this player owns.
@@ -62,6 +65,14 @@ public class Player {
         resources = new ArrayList<Resource>();
         this.pm = pm;
         number = playerNumber;
+
+        /* Test resources
+        ConnectionModifier connectionModifier = new ConnectionModifier("Connection Modifier", this);
+        ConnectionModifier connectionModifier2 = new ConnectionModifier("Connection Modifier", this);
+        ConnectionModifier connectionModifier3 = new ConnectionModifier("Connection Modifier", this);
+        addResource(connectionModifier);
+        addResource(connectionModifier2);
+        addResource(connectionModifier3);*/
     }
 
     /**
@@ -114,7 +125,7 @@ public class Player {
      */
     public void removeResource(Resource resource) {
         resources.remove(resource);
-        resource.dispose();
+        // resource.dispose();
         changed();
     }
 
@@ -207,6 +218,11 @@ public class Player {
     public void completeGoal(Goal goal) {
         addScore(goal.getRewardScore());
         goal.setComplete();
+
+        //Team EEP: Upon goal completion the player is allowed to modify one connection
+        ConnectionModifier connectionModifier = new ConnectionModifier("Connection Modifier", this);
+        addResource(connectionModifier);
+
         changed();
     }
 
@@ -232,6 +248,10 @@ public class Player {
         return pm;
     }
 
+    public void setPlayerManager(PlayerManager pm) {
+        this.pm = pm;
+    }
+
     /**
      * Returns which player this is, e.g. Player 1, player 2.
      */
@@ -252,5 +272,17 @@ public class Player {
 
         }
         return incompleteGoals;
+    }
+
+    /**
+     * @returns List of player's resources of type ConnectionModifier
+     * @author Team EEP
+     */
+    public List<ConnectionModifier> getConnectionModifiers(){
+        List<ConnectionModifier> connectionModifiers = new ArrayList<ConnectionModifier>();
+        for (Resource resource : resources){
+            if (resource instanceof ConnectionModifier) { connectionModifiers.add( (ConnectionModifier) resource); }
+        }
+        return connectionModifiers;
     }
 }

@@ -5,10 +5,11 @@ import gameLogic.map.IPositionable;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import fvs.taxe.actor.GenericActor;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 
 /**This class is a type of image specifically for creating connections between stations.*/
-public class ConnectionActor extends Image{
+public class ConnectionActor extends Image implements GenericActor {
 
 	/**This variable stores the width of the connection between stations in pixels.*/
 	private float connectionWidth;

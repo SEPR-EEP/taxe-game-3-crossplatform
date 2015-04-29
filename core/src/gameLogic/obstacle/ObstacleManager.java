@@ -10,9 +10,10 @@ import Util.Tuple;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import java.io.Serializable;
 
 /** This class creates and stores the Obstacles from the Obstacles.json files */
-public class ObstacleManager {
+public class ObstacleManager implements Serializable {
 	/** The default value for the probability of an obstacle occurring if no probability is set in Obstacles.json*/
 	private static final float DEFAULT_OBSTACLE_PROBABILITY = 0.1f;
 	

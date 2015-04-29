@@ -32,7 +32,7 @@ public class StationController {
 	public final static int CONNECTION_LINE_WIDTH = 5;
 
 	/**The context of the game.*/
-	private Context context;
+	private static Context context;
 	
 	/**The ToolTip to be used to display Station information.*/
 	private Tooltip tooltip;
@@ -75,7 +75,13 @@ public class StationController {
 	 * @param station The Station to used to create the StationActor.
 	 */
 	private void renderStation(final Station station) {
-		final StationActor stationActor = new StationActor(station.getLocation());
+		final StationActor stationActor;
+
+		if(station instanceof CollisionStation){
+			stationActor = new CollisionStationActor(station.getLocation());
+		}else{
+			stationActor = new StationActor(station.getLocation());
+		}
 
 		stationActor.addListener(new ClickListener() {
 			@Override
@@ -104,42 +110,12 @@ public class StationController {
 		context.getStage().addActor(stationActor);
 	}
 
-	/**This method creates a StationActor from the CollisionStation and adds Clicked, Enter and Exit methods to it.
-	 * @param collisionStation The CollisionStation to used to create the StationActor.
-	 */
-	private void renderCollisionStation(final CollisionStation collisionStation) {
-		final CollisionStationActor collisionStationActor = new CollisionStationActor(collisionStation.getLocation());
-
-		collisionStationActor.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                stationClicked(collisionStation);
-            }
-
-            @Override
-            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                tooltip.setPosition(collisionStationActor.getX() + 10, collisionStationActor.getY() + 10);
-                tooltip.show("Junction: " + collisionStation.getName());
-            }
-
-            @Override
-            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                tooltip.hide();
-            }
-        });
-		context.getStage().addActor(collisionStationActor);
-	}
-
 	/**This method draws all of the stations, as Stations or CollisionStations.*/
 	public void drawStations() {
 		List<Station> stations = context.getGameLogic().getMap().getStations();
 
 		for (Station station : stations) {
-			if(station instanceof CollisionStation) {
-				renderCollisionStation((CollisionStation) station);
-			} else {
 				renderStation(station);
-			}
 		}
 	}
 
@@ -148,12 +124,36 @@ public class StationController {
 	 * @param color The color of the connections.
 	 */
 	public void drawConnections(List<Connection> connections, final Color color) {
+
+		// Reset everything
+		for ( Actor a: context.getStage().getActors() ) {
+			if ( a instanceof ConnectionActor ) {
+				for ( Connection c: connections ) {
+					if (c.getActor() == a) {
+						c.setActor(null);
+					}
+				}
+				a.remove();
+			}
+		}
+
 		for (Connection connection : connections) {
 			final IPositionable start = connection.getStation1().getLocation();
 			final IPositionable end = connection.getStation2().getLocation();
-			ConnectionActor connectionActor = new ConnectionActor(Color.GRAY, start, end, CONNECTION_LINE_WIDTH);
-			connection.setActor(connectionActor);
-			context.getStage().addActor(connectionActor);
+			if (connection.getActor() == null) {
+				ConnectionActor connectionActor = new ConnectionActor(Color.GRAY, start, end, CONNECTION_LINE_WIDTH);
+				connection.setActor(connectionActor);
+				context.getStage().addActor(connectionActor);
+			}
+		}
+	}
+	
+	public static void redrawTrains(){
+		//Add all train actors to the stage again so they are on top
+		for(Player player : context.getGameLogic().getPlayerManager().getAllPlayers()){
+			for(Resource<?> train : player.getActiveTrains()){
+				context.getStage().addActor(((Train)train).getActor());
+			}
 		}
 	}
 
@@ -181,7 +181,7 @@ public class StationController {
 		for(Resource resource : player.getResources()) {
 			if(resource instanceof Train) {
 				if(((Train) resource).getActor() != null) {
-					if(((Train) resource).getPosition().equals(station.getLocation())) {
+					if(((Train) resource).getPosition() != null && ((Train) resource).getPosition().equals(station.getLocation())) {
 						count++;
 					}
 				}

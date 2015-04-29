@@ -1,10 +1,11 @@
 package gameLogic.resource;
 
+import Util.HasActor;
 import gameLogic.Disposable;
 import gameLogic.Player;
 
 /** This abstract class represents any resource that can be used in game.*/
-public abstract class Resource implements Disposable {
+public abstract class Resource<Type> extends HasActor<Type> implements Disposable {
 	
 	/**This variable stores the string that represents the instantiated object */
 	protected String name;
@@ -31,7 +32,8 @@ public abstract class Resource implements Disposable {
 	 * @return True if the player owns the resource, false otherwise
 	 */
 	public boolean isOwnedBy(Player player) {
-		return player == this.player;
+		System.out.println("The resource is owned by " + this.player + ", you asked me " + player);
+		return player.equals(this.player);
 	}
 
 	/** Notifies the player that owns the resource that the resource has changed */

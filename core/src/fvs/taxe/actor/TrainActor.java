@@ -12,7 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 
 /**This class is a type of image specifically for creating Actors for Trains.*/
-public class TrainActor extends Image {
+public class TrainActor extends Image implements GenericActor {
 	/**The width of a TrainActor in pixels.*/
     public static final int width = 36;
     
@@ -46,7 +46,7 @@ public class TrainActor extends Image {
         rightDrawable = new Image(new CustomTexture(Gdx.files.internal(train.getRightImage()))).getDrawable();
 
         IPositionable position = train.getPosition();
-
+        this.setZIndex(20);
         train.setActor(this);
         this.train = train;
         setSize(width, height);

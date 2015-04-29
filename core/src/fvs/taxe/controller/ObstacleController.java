@@ -1,7 +1,11 @@
 package fvs.taxe.controller;
 
+import com.badlogic.gdx.graphics.Color;
 import fvs.taxe.actor.ObstacleActor;
 import fvs.taxe.actor.ParticleEffectActor;
+import gameLogic.Game;
+import gameLogic.GameState;
+import gameLogic.GameStateListener;
 import gameLogic.obstacle.Obstacle;
 import gameLogic.obstacle.ObstacleListener;
 import gameLogic.obstacle.ObstacleType;
@@ -14,6 +18,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 
 import Util.Tuple;
+import gameLogic.resource.Train;
 
 /**Controller for updating the game with graphics for obstacles.*/
 public class ObstacleController {
@@ -67,6 +72,25 @@ public class ObstacleController {
 				obstacle.getActor().setVisible(false);
 				obstacle.getStation().clearObstacle();
 				obstacle.end();
+			}
+		});
+
+		context.getGameLogic().subscribeStateChanged(new GameStateListener() {
+			@Override
+			public void changed(GameState state) {
+				if (state == GameState.DESTROYING) {
+					Train train = Game.getInstance().getTrainToDestroy();
+
+					train.getActor().getActions().clear();
+					train.getActor().setVisible(false);
+
+					train.getPlayer().removeResource(train);
+
+					context.getTopBarController().displayFlashMessage("Your train was hit by a natural disaster...", Color.BLACK, Color.RED, 4);
+
+					Game.getInstance().setState(GameState.NORMAL);
+
+				}
 			}
 		});
 	}

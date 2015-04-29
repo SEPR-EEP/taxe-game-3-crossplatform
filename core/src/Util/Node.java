@@ -1,8 +1,9 @@
 package Util;
 
 import java.util.ArrayList;
+import java.io.Serializable;
 
-public class Node<T> {
+public class Node<T> implements Serializable {
 //Class for constructing trees and graphs using a node data structure
 private T data;
 private Node<T> parent;

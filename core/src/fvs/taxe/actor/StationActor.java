@@ -5,12 +5,13 @@ import fvs.taxe.CustomTexture;
 import gameLogic.map.IPositionable;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.Timer.Task;
 
 /**This class is a type of image specifically for creating Station actors.*/
-public class StationActor extends Image {
+public class StationActor extends Image implements GenericActor {
 	
 	/**The amount to increase a StationActors's size (width and height) when it is selected  in pixels.*/
 	private static final int STATION_SIZE_INCREASE = 10;
@@ -32,6 +33,16 @@ public class StationActor extends Image {
 	 */
 	public StationActor(IPositionable location) {
 		super(new CustomTexture(Gdx.files.internal("station_dot.png")));
+
+		setSize(width, height);
+		setPosition(location.getX() - width / 2, location.getY() - height / 2);
+	}
+	
+	/**Instantiation method
+	 * @param location the location of the station actor
+	 */
+	public StationActor(IPositionable location, CustomTexture texture) {
+		super(texture);
 
 		setSize(width, height);
 		setPosition(location.getX() - width / 2, location.getY() - height / 2);

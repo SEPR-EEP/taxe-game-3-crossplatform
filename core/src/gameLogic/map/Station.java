@@ -1,17 +1,15 @@
 package gameLogic.map;
 
+import Util.HasActor;
 import fvs.taxe.actor.StationActor;
 import gameLogic.obstacle.Obstacle;
 /**This class is used to store information about a station.*/
-public class Station{
+public class Station extends HasActor<StationActor> {
 	/**The name of the station.*/
 	private String name;
 	
 	/**The in game position of the station.*/
 	private IPositionable location;
-	
-	/**The actor that represents the station graphically.*/
-	private StationActor actor;
 	
 	/**The obstacle occupying the station, if any.*/
 	private Obstacle obstacle;
@@ -48,18 +46,6 @@ public class Station{
 	public void setLocation(IPositionable location) {
 		this.location = location;
 	}
-	
-	/**This method sets the actor that graphically represents the station.
-	 * @param name The new actor of the station.
-	 */
-	public void setActor(StationActor actor){
-		this.actor = actor;
-	}
-	
-	/**@return The actor that represents the station.*/
-	public StationActor getActor(){
-		return actor;
-	}
 
 	/**This method sets an Obstacle to occupy the station.*/
 	public void setObstacle(Obstacle obstacle) {
@@ -84,5 +70,9 @@ public class Station{
 	public void clearObstacle() {
 		this.obstacle = null;
 	}
-	
+
+	public boolean equals(Station other) {
+		return this.getName().equals(other.getName());
+	}
+
 }

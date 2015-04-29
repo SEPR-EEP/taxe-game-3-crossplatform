@@ -1,11 +1,12 @@
 package gameLogic.obstacle;
 
+import Util.HasActor;
 import fvs.taxe.actor.ObstacleActor;
 import gameLogic.map.IPositionable;
 import gameLogic.map.Station;
 
 /** Class that represents an Obstacle- defined by its type and station it is located in*/
-public class Obstacle {
+public class Obstacle extends HasActor<ObstacleActor> {
 	
 	/** Station the obstacle is connected to */
 	private Station station;	
@@ -21,10 +22,7 @@ public class Obstacle {
 	
 	/** Position of the obstacle */
 	private IPositionable position;		
-	
-	/** Corresponding actor for the obstacle */
-	private ObstacleActor actor;					
-	
+
 	/** Constructor for the obstacle that sets the type, station, position and active fields of Obstacle
 	 * @param type The type of the Obstacle
 	 * @param station The station that the Obstacle is connected to
@@ -130,18 +128,5 @@ public class Obstacle {
 	public IPositionable getPosition() {
 		return this.position;
 	}
-	
-	/** Set the ObstacleActor that is associated with this obstacle
-	 * @param actor The new ObstacleActor to be associated with the obstacle
-	 */
-	public void setActor(ObstacleActor actor){
-		this.actor = actor;
-	}
-	
-	/** Get the ObstacleActor that is associated with this obstacle
-	 * @return The ObstacleActor that is associated with this obstacle
-	 */
-	public ObstacleActor getActor(){
-		return this.actor;
-	}
+
 }

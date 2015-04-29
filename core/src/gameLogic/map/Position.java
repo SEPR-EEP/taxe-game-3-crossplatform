@@ -1,7 +1,9 @@
 package gameLogic.map;
 
+import java.io.Serializable;
+
 /**This class describes a more specific version of IPositionable used for Positions in the Game world.*/
-public class Position extends IPositionable {
+public class Position extends IPositionable implements Serializable {
 	private int x;
 	private int y;
 	

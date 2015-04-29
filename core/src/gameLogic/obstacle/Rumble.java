@@ -3,10 +3,11 @@ package gameLogic.obstacle;
 import java.util.Random;
 
 import com.badlogic.gdx.math.Vector2;
+import java.io.Serializable;
 
 // adapted from https://carelesslabs.wordpress.com/2014/05/08/simple-screen-shake/
 /** Class for creating the shaking effect for when an earthquake occurs*/
-public class Rumble {
+public class Rumble implements Serializable {
 	/** The amount of time the shake should occur*/
 	public float time;
 

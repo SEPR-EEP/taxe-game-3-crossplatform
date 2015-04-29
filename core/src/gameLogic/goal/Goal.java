@@ -8,9 +8,10 @@ import gameLogic.Game;
 import gameLogic.map.Station;
 import gameLogic.resource.ResourceManager;
 import gameLogic.resource.Train;
+import java.io.Serializable;
 
 /**This class is a goal that is added to a player and repeatedly (?) checked for completion.*/
-public class Goal {
+public class Goal implements Serializable {
 	
 	/**The score value of the goal.*/
 	private int rewardScore;

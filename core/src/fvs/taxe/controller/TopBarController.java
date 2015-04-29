@@ -4,18 +4,35 @@ import static com.badlogic.gdx.scenes.scene2d.actions.Actions.delay;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.run;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence;
+import Util.ActorsManager;
+
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+
 import fvs.taxe.TaxeGame;
+import gameLogic.Game;
 import gameLogic.GameState;
 import gameLogic.GameStateListener;
+import gameLogic.Player;
 import gameLogic.obstacle.Obstacle;
 import gameLogic.obstacle.ObstacleListener;
 import gameLogic.obstacle.ObstacleType;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+
+import gameLogic.resource.ConnectionModifier;
+import gameLogic.resource.Resource;
+
+import java.util.List;
 
 /**Controller for the Top Bar of the GUI, changes the Top Bar.*/
 public class TopBarController {
@@ -25,10 +42,17 @@ public class TopBarController {
 
 	/**The Game Context.*/
 	private Context context;
-	
+
 	/**The end Turn Button used for the player to End the Turn.*/
-	private TextButton endTurnButton;
-	
+	public TextButton endTurnButton;
+
+	/** The modifyConnection button for entering edit connection state */
+	public TextButton modifyConnectionButton;
+
+	/**The replay button.*/
+	public Slider replaySpeedSlider;
+	public TextButton replayButton;
+
 	/**Label for displaying a message to the player.*/
 	private Label flashMessage;
 	
@@ -44,32 +68,32 @@ public class TopBarController {
 	public TopBarController(final Context context) {
 		this.context = context;
 
-		context.getGameLogic().subscribeObstacleChanged(new ObstacleListener(){
+		context.getGameLogic().subscribeObstacleChanged(new ObstacleListener() {
 
 			@Override
 			public void started(Obstacle obstacle) {
-				ObstacleType type = obstacle.getType();						     
+				ObstacleType type = obstacle.getType();
 				Color color = null;
-				switch(type){
-				case BLIZZARD:
-					color = Color.WHITE;
-					break;
-				case FLOOD:
-					color = Color.valueOf("1079c1");
-					break;
-				case VOLCANO:
-					color = Color.valueOf("ec182c");
-					break;
-				case EARTHQUAKE:
-					color = Color.valueOf("7a370a");
-					break;
-				}				
+				switch (type) {
+					case BLIZZARD:
+						color = Color.WHITE;
+						break;
+					case FLOOD:
+						color = Color.valueOf("1079c1");
+						break;
+					case VOLCANO:
+						color = Color.valueOf("ec182c");
+						break;
+					case EARTHQUAKE:
+						color = Color.valueOf("7a370a");
+						break;
+				}
 				displayObstacleMessage(obstacle.getType().toString() + " in " + obstacle.getStation().getName(), color);
 			}
 
 			@Override
 			public void ended(Obstacle obstacle) {
-			}		        	
+			}
 		});
 	}
 
@@ -97,7 +121,7 @@ public class TopBarController {
 	public void drawObstacleLabel() {
 		obstacleLabel = new Label("", context.getSkin());
 		obstacleLabel.setColor(Color.BLACK);
-		obstacleLabel.setPosition(10,TaxeGame.HEIGHT - 34);
+		obstacleLabel.setPosition(10, TaxeGame.HEIGHT - 34);
 		context.getStage().addActor(obstacleLabel);
 	}
 
@@ -135,7 +159,7 @@ public class TopBarController {
 		flashMessage.addAction(sequence(delay(time), fadeOut(0.25f), run(new Runnable() {
 			public void run() {
 				topBarBackground.setControlsColor(Color.LIGHT_GRAY);
-				if (obstacleLabel.getActions().size == 0){
+				if (obstacleLabel.getActions().size == 0) {
 					topBarBackground.setObstacleColor(Color.LIGHT_GRAY);
 				}
 			}
@@ -154,8 +178,8 @@ public class TopBarController {
 		obstacleLabel.setColor(Color.BLACK);
 		obstacleLabel.pack();
 		topBarBackground.setObstacleColor(color);
-		topBarBackground.setObstacleWidth(obstacleLabel.getWidth()+20);
-		obstacleLabel.addAction(sequence(delay(2f),fadeOut(0.25f), run(new Runnable() {
+		topBarBackground.setObstacleWidth(obstacleLabel.getWidth() + 20);
+		obstacleLabel.addAction(sequence(delay(2f), fadeOut(0.25f), run(new Runnable() {
 			public void run() {
 				// run action to reset obstacle label after it has finished displaying information
 				obstacleLabel.setText("");
@@ -167,18 +191,20 @@ public class TopBarController {
 	/**This method adds an End Turn button to the game that captures an on click event and notifies the game when the turn is over.*/
 	public void drawEndTurnButton() {
 		endTurnButton = new TextButton("End Turn", context.getSkin());
-		endTurnButton.setPosition(TaxeGame.WIDTH - 100.0f, TaxeGame.HEIGHT - 33.0f);
+		endTurnButton.setPosition(TaxeGame.WIDTH - 80.0f, TaxeGame.HEIGHT - 33.0f);
 		endTurnButton.addListener(new ClickListener() {
 			@Override
 			public void clicked(InputEvent event, float x, float y) {
-				context.getGameLogic().getPlayerManager().turnOver();
+				if ( !Game.getInstance().replayMode ) {
+					context.getGameLogic().getPlayerManager().turnOver();
+				}
 			}
 		});
 
 		context.getGameLogic().subscribeStateChanged(new GameStateListener() {
 			@Override
 			public void changed(GameState state) {
-				if(state == GameState.NORMAL) {
+				if (state == GameState.NORMAL ) {
 					endTurnButton.setVisible(true);
 				} else {
 					endTurnButton.setVisible(false);
@@ -187,5 +213,154 @@ public class TopBarController {
 		});
 
 		context.getStage().addActor(endTurnButton);
+
+		context.getGameLogic().subscribeStateChanged(new GameStateListener() {
+
+			@Override
+			public void changed(GameState state) {
+				if (state == GameState.CONFIRMING) {
+					Game.getInstance().getConfirmingTrain().setRoute(context.getGameLogic().getMap().createRoute(Game.getInstance().getConfirmingPositions()));
+
+					@SuppressWarnings("unused")
+					TrainMoveController move = new TrainMoveController(context, Game.getInstance().getConfirmingTrain());
+
+				}
+			}
+		});
+
+		context.getStage().addActor(endTurnButton);
 	}
+
+	/**This method adds an End Turn button to the game that captures an on click event and notifies the game when the turn is over.*/
+	public void drawReplayButton() {
+
+
+		replaySpeedSlider = new Slider(1.0f, 5.0f, 1.0f, false, context.getSkin());
+		replaySpeedSlider.setPosition(TaxeGame.WIDTH - 500.0f, TaxeGame.HEIGHT - 33.0f);
+		context.getStage().addActor(replaySpeedSlider);
+		
+		replaySpeedSlider.addListener(new ClickListener() {
+
+			@Override
+			public void touchUp(InputEvent event, float x, float y,
+								int pointer, int button) {
+				super.touchUp(event, x, y, pointer, button);
+				replaySpeedSlider.setVisible(false);
+			}
+
+
+//			@Override
+//			public void exit(InputEvent event, float x, float y, int pointer,
+//					Actor toActor) {
+//				replaySpeedSlider.setVisible(false);
+//			}		
+
+
+		});
+
+
+		replayButton = new TextButton("    Loading    ", context.getSkin());
+		replayButton.setPosition(TaxeGame.WIDTH - 350.0f, TaxeGame.HEIGHT - 33.0f);
+		replayButton.addListener(new ClickListener() {
+			@Override
+			public void clicked(InputEvent event, float x, float y) {
+
+				if (Game.getInstance().replayMode) {
+					return;
+				}
+
+				// System.out.println("Replay speed is: " + replaySpeedSlider.getValue() + "x!");
+				ActorsManager.interruptAllTrains();
+				ActorsManager.hideAllObstacles();
+
+				Game.getInstance().setGameSpeed(replaySpeedSlider.getValue());
+				Game.getInstance().createSnapshot();
+				Game.getInstance().replaySnapshot(0);
+
+				context.getStationController().drawConnections(Game.getInstance().getMap().getConnections(), Color.GRAY);
+				context.getStationController().drawStations();
+				context.getStationController().redrawTrains();
+			}
+
+			@Override
+			public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+				if ( !Game.getInstance().replayMode ) {
+					replaySpeedSlider.setVisible(true);
+				}
+			}
+		});
+
+		context.getGameLogic().subscribeStateChanged(new GameStateListener() {
+			@Override
+			public void changed(GameState state) {
+				if (state == GameState.NORMAL) {
+					replayButton.setVisible(true);
+				} else {
+					if ( !Game.getInstance().replayMode ) {
+						replayButton.setVisible(false);
+					}
+					replaySpeedSlider.setVisible(false);
+				}
+			}
+		});
+
+		context.getStage().addActor(replayButton);
+
+		replaySpeedSlider.setVisible(false);
+	}
+
+
+
+	/** This method adds a Modify Connection button the game the captures an on click event and
+	 * notifies the game to enter connection editing mode
+	 * @author Team EEP*/
+	public void drawModifyConnectionButton() {
+		modifyConnectionButton = new TextButton("Mod Connection x" + (context.getGameLogic().getPlayerManager().getCurrentPlayer().getConnectionModifiers().size() + 1), context.getSkin());
+		modifyConnectionButton.setPosition(TaxeGame.WIDTH - 240.0f, TaxeGame.HEIGHT - 33.0f);
+		modifyConnectionButton.setVisible(false);
+
+
+		modifyConnectionButton.addListener(new ClickListener() {
+			@Override
+			public void clicked(InputEvent event, float x, float y) {
+
+				Player player = context.getGameLogic().getPlayerManager().getCurrentPlayer();
+				List<ConnectionModifier> connectionModifierList = player.getConnectionModifiers();
+
+				//Only respond to click if player has a connection modifier resource
+				if (!connectionModifierList.isEmpty()) {
+
+					//Remove a connection modifier resource from the players resource list
+					player.getResources().remove(player.getConnectionModifiers().get(0));
+
+					//Set game to editing state
+					context.getGameLogic().setState(GameState.EDITING);
+
+					displayFlashMessage("Select two stations to either connect or disconnect", Color.RED);
+				}
+
+			}
+		});
+
+		context.getGameLogic().subscribeStateChanged(new GameStateListener() {
+			@Override
+			public void changed(GameState state) {
+				//Set visible if game in normal state and play has connection modifier resources to be spent
+				Player player = context.getGameLogic().getPlayerManager().getCurrentPlayer();
+				if (state == GameState.NORMAL
+						&& !player.getConnectionModifiers().isEmpty()) {
+					modifyConnectionButton.setVisible(true);
+				} else {
+					modifyConnectionButton.setVisible(false);
+				}
+			}
+
+		});
+
+		context.getStage().addActor(modifyConnectionButton);
+
+
+	}
+
+
 }
